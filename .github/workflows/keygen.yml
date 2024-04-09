@@ -40,4 +40,6 @@ jobs:
         with:
           name: keygen
           path: ./keygen
-      - run: ./keygen 30s
+      - run: |-
+          chmod +x ./keygen
+          ./keygen 30s
