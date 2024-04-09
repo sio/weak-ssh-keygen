@@ -23,8 +23,8 @@ jobs:
           retention-days: 1
           path: ./keygen
   test:
-    name: test-${{ matrix:on }}
-    container: ${{ matrix:on }}
+    name: test-${{ matrix.on }}
+    container: ${{ matrix.on }}
     strategy:
       matrix:
         on:
