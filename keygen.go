@@ -143,7 +143,7 @@ func osSshKeygen() (key sshkey, err error) {
 	var suf [2]byte
 	_, _ = rand.Read(suf[:])
 	filename := filepath.Join(temp, fmt.Sprintf("key-%x-%x-%x", len(seen), time.Now().UnixNano(), suf))
-	cmd := exec.Command("ssh-keygen", "-t", "ed25519", "-C", "your_email@example.com", "-f", filename)
+	cmd := exec.Command("ssh-keygen", "-t", "ed25519", "-P", "", "-C", "your_email@example.com", "-f", filename)
 	err = cmd.Run()
 	if err != nil {
 		return key, fmt.Errorf("generating key: %w", err)
