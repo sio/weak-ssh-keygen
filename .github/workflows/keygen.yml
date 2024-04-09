@@ -46,12 +46,12 @@ jobs:
       - name: Dependencies (Debian/Ubuntu)
         if: ${{ startsWith(matrix.on, 'debian') || startsWith(matrix.on, 'ubuntu') }}
         run: |-
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends openssh-client
+          apt-get update
+          apt-get install -y --no-install-recommends openssh-client
       - name: Dependencies (Fedora)
         if: ${{ startsWith(matrix.on, 'fedora') }}
         run: |-
-          sudo dnf -y install openssh-clients
+          dnf -y install openssh-clients
       - run: |-
           ls ./keygen
           chmod +x ./keygen/keygen
