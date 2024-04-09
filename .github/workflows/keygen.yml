@@ -1,6 +1,7 @@
 name: ssh-keygen
 
 on:
+  push:
   schedule:
     - cron: '18 19 29 * *'
   workflow_dispatch:
