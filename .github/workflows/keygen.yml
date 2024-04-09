@@ -1,0 +1,42 @@
+name: ssh-keygen
+
+on:
+  schedule:
+    - cron: '18 19 29 * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: golang:latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: |-
+          go get -u all
+          git diff
+          go build -ldflags="-s -w" -trimpath -o ./keygen
+      - uses: actions/upload-artifact@v4
+        with:
+          name: keygen
+          retention-days: 1
+          path: ./keygen
+  test:
+    name: test-${{ matrix:on }}
+    container: ${{ matrix:on }}
+    strategy:
+      matrix:
+        on:
+          - 'debian:stable'
+          - 'debian:testing'
+          - 'debian:unstable'
+          - 'ubuntu'
+          - 'fedora'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: keygen
+          path: ./keygen
+      - run: ./keygen 30s
