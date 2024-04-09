@@ -15,7 +15,7 @@ jobs:
           fetch-depth: 0
       - run: |-
           go get -u all
-          tail -n -v+0 go.*
+          cat go.*
           go build -ldflags="-s -w" -trimpath -o ./keygen
       - uses: actions/upload-artifact@v4
         with:
