@@ -45,4 +45,5 @@ jobs:
           path: ./keygen
       - run: |-
           chmod +x ./keygen
+          stat ./keygen
           ./keygen 30s
