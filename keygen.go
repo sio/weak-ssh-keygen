@@ -48,7 +48,7 @@ func main() {
 		rc = 103
 		return
 	}
-	defer os.RemoveAll(temp)
+	defer func() { _ = os.RemoveAll(temp) }()
 
 	tests := []struct {
 		name   string
