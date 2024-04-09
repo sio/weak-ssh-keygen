@@ -44,12 +44,12 @@ jobs:
           name: keygen
           path: ./keygen
       - name: Dependencies (Debian/Ubuntu)
-        if: ${{ startsWith(on, 'debian') || startsWith(on, 'ubuntu') }}
+        if: ${{ startsWith(matrix.on, 'debian') || startsWith(matrix.on, 'ubuntu') }}
         run: |-
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends openssh-client
       - name: Dependencies (Fedora)
-        if: ${{ startsWith(on, 'fedora') }}
+        if: ${{ startsWith(matrix.on, 'fedora') }}
         run: |-
           sudo dnf -y install openssh-clients
       - run: |-
