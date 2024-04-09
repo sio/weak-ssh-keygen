@@ -37,14 +37,14 @@ func main() {
 
 	runtime, err := time.ParseDuration(os.Args[1])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "bad argument value: %v\n", err)
 		rc = 102
 		return
 	}
 
 	temp, err = os.MkdirTemp(os.Getenv("TEMP"), "ssh-keygen-*")
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "create temporary directory: %v\n", err)
 		rc = 103
 		return
 	}
@@ -62,7 +62,7 @@ func main() {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(t.limit))
 		err = test(ctx, t.keygen)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintf(os.Stderr, "%s: %v\n", t.name, err)
 			rc = 1
 		}
 		fmt.Printf("%20s: %d duplicates out of %d keys\n", t.name, len(dups), len(seen))
