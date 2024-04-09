@@ -18,7 +18,6 @@ jobs:
           go get -u all
           cat go.*
           go build -ldflags="-s -w" -trimpath -buildvcs=false -o ./keygen
-          file ./keygen
         env:
           CGO_ENABLED: 0
       - uses: actions/upload-artifact@v4
@@ -46,4 +45,5 @@ jobs:
           path: ./keygen
       - run: |-
           chmod +x ./keygen
+          file ./keygen
           ./keygen 30s
