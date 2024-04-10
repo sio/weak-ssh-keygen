@@ -82,7 +82,7 @@ func test(ctx context.Context, keygen func() (sshkey, error)) error {
 	defer cancel()
 
 	var errors = make(chan error)
-	var goroutines = runtime.NumCPU() + 3
+	var goroutines = runtime.NumCPU()
 	for g := 0; g < goroutines; g++ {
 		go func() {
 			for {
