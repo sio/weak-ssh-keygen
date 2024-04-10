@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"syscall"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -42,17 +43,9 @@ func main() {
 		return
 	}
 
-	temp, err = os.MkdirTemp(os.Getenv("TEMP"), "ssh-keygen-*")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "create temporary directory: %v\n", err)
-		rc = 103
-		return
-	}
-	defer func() { _ = os.RemoveAll(temp) }()
-
 	tests := []struct {
 		name   string
-		keygen func() (sshkey, error)
+		keygen func(path string) (sshkey, error)
 		limit  time.Duration
 	}{
 		{name: "ssh-keygen", keygen: osSshKeygen, limit: runtime * 2 / 3},
@@ -77,13 +70,28 @@ func main() {
 	}
 }
 
-func test(ctx context.Context, keygen func() (sshkey, error)) error {
+func test(ctx context.Context, keygen func(path string) (sshkey, error)) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	temp, err := os.MkdirTemp(os.Getenv("TEMP"), "ssh-keygen-*")
+	if err != nil {
+		return fmt.Errorf("create temporary directory: %w", err)
+	}
+	defer func() { _ = os.RemoveAll(temp) }()
 
 	var errors = make(chan error)
 	var goroutines = runtime.NumCPU() + 3
 	for g := 0; g < goroutines; g++ {
+		fifo := filepath.Join(temp, fmt.Sprintf("key-%03d", g))
+		err = syscall.Mkfifo(fifo, 0600)
+		if err != nil {
+			return fmt.Errorf("mkfifo: %w", err)
+		}
+		err = os.Symlink("/dev/null", fifo+".pub")
+		if err != nil {
+			return fmt.Errorf("symlink: %w", err)
+		}
 		go func() {
 			for {
 				select {
@@ -91,7 +99,7 @@ func test(ctx context.Context, keygen func() (sshkey, error)) error {
 					return
 				default:
 				}
-				key, err := keygen()
+				key, err := keygen(fifo)
 				if err != nil {
 					select {
 					case errors <- err:
@@ -133,29 +141,24 @@ var (
 	dups   = make([]sshkey, 0)
 )
 
-// Temporary directory. Preferably on tmpfs or other fast storage
-var temp string
-
 // OS provided ssh-keygen tool
 //
 // ssh-keygen -t ed25519 -C "your_email@example.com"
-func osSshKeygen() (key sshkey, err error) {
-	var suf [2]byte
-	_, _ = rand.Read(suf[:])
-	filename := filepath.Join(temp, fmt.Sprintf("key-%x-%x-%x", len(seen), time.Now().UnixNano(), suf))
-	cmd := exec.Command("ssh-keygen", "-t", "ed25519", "-P", "", "-C", "your_email@example.com", "-f", filename)
-	err = cmd.Run()
+func osSshKeygen(path string) (key sshkey, err error) {
+	cmd := exec.Command("ssh-keygen", "-t", "ed25519", "-P", "", "-C", "your_email@example.com", "-f", path)
+	cmd.Stdin = yes{} // ssh-keygen asks before overwriting existing key file
+	err = cmd.Start()
 	if err != nil {
-		return key, fmt.Errorf("generating key: %w", err)
+		return key, fmt.Errorf("start ssh-keygen: %w", err)
 	}
-	raw, err := os.ReadFile(filename)
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return key, fmt.Errorf("reading generated key: %w", err)
 	}
-	go func() {
-		_ = os.RemoveAll(filename)
-		_ = os.RemoveAll(filename + ".pub")
-	}()
+	err = cmd.Wait()
+	if err != nil {
+		return key, fmt.Errorf("generating key: %w", err)
+	}
 	private, err := ssh.ParseRawPrivateKey(raw)
 	if err != nil {
 		return key, fmt.Errorf("invalid generated key: %w", err)
@@ -169,11 +172,22 @@ func osSshKeygen() (key sshkey, err error) {
 }
 
 // Generate ssh keys with Go standard library
-func goSshKeygen() (key sshkey, err error) {
+func goSshKeygen(path string) (key sshkey, err error) {
 	_, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return key, fmt.Errorf("generating key: %w", err)
 	}
 	copy(key[:], priv[:])
 	return key, nil
+}
+
+type yes struct{}
+
+func (y yes) Read(p []byte) (n int, err error) {
+	var YES = [...]byte{'y', '\n'}
+	n = copy(p, YES[:])
+	if n != 2 {
+		return n, fmt.Errorf("incomplete yes")
+	}
+	return n, nil
 }
