@@ -55,8 +55,8 @@ func main() {
 		keygen func() (sshkey, error)
 		limit  time.Duration
 	}{
-		{name: "ssh-keygen", keygen: osSshKeygen, limit: runtime * 2 / 3},
-		{name: "stdlib", keygen: goSshKeygen, limit: runtime * 1 / 3},
+		{name: "ssh-keygen", keygen: osSshKeygen, limit: runtime * 9 / 10},
+		{name: "stdlib", keygen: goSshKeygen, limit: runtime * 1 / 10},
 	}
 	for _, t := range tests {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(t.limit))
