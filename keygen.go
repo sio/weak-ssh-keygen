@@ -123,7 +123,7 @@ func test(ctx context.Context, keygen func() (sshkey, error)) error {
 type sshkey [ed25519.SeedSize]byte
 
 func (k sshkey) String() string {
-	return fmt.Sprintf("[ed25519 seed=%#x]", k)
+	return fmt.Sprintf("[ed25519 seed=%#x]", k[:])
 }
 
 // Keep track of which keys we have already seen
